@@ -4,7 +4,7 @@ class AppConstants {
 
   // API
   static const String baseUrl =
-      'http://192.168.18.57:8080'; // Android emulator → localhost
+      'http://10.252.243.104:8080'; // Android emulator → localhost
   static const String apiVersion = '/v1';
   static const int connectTimeout = 30;
   static const int receiveTimeout = 30;
@@ -41,3 +41,18 @@ class AppConstants {
   static const String otpTypeEmail = 'email';
   static const String otpTypeTotp = 'totp';
 }
+// class AppConstants {
+//   // API Base URL - Gunakan domain/IP terdekat dengan lokasi user
+//   static const String baseUrl = 'http://10.252.243.104:8080';
+//   static const String apiVersion = '$baseUrl/api/v1';
+
+//   // Timeout settings (dalam milliseconds)
+//   static const int connectTimeoutMs = 30000;  // 30 detik (lebih realistis)
+//   static const int receiveTimeoutMs = 30000;  // 30 detik
+//   static const int sendTimeoutMs = 30000;     // 30 detik
+
+//   // Compression & optimization
+//   static const bool enableCompression = true;
+//   static const bool enableCaching = true;
+//   static const int cacheDurationSeconds = 300; // 5 menit
+// }

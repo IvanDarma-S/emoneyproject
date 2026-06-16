@@ -15,11 +15,44 @@ class TwoFANotifPage extends StatefulWidget {
 
 class _TwoFANotifPageState extends State<TwoFANotifPage> {
   String _phase = 'waiting'; // waiting, approved
+  int _timeout = 120; // 2 minutes timeout
+  Timer? _timeoutTimer;
 
   @override
   void initState() {
     super.initState();
     context.read<OtpBloc>().add(OtpSendFirebase());
+    _startTimeoutTimer();
+  }
+
+  void _startTimeoutTimer() {
+    _timeoutTimer?.cancel();
+    _timeoutTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_timeout <= 0) {
+        timer.cancel();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Permintaan verifikasi kedaluwarsa. Coba lagi.'),
+              backgroundColor: AppColors.red,
+            ),
+          );
+          context.go('/login');
+        }
+      } else {
+        setState(() => _timeout--);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -33,7 +66,10 @@ class _TwoFANotifPageState extends State<TwoFANotifPage> {
           });
         } else if (state is OtpError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: AppColors.red),
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.red,
+            ),
           );
         }
       },
@@ -45,8 +81,15 @@ class _TwoFANotifPageState extends State<TwoFANotifPage> {
               Align(
                 alignment: Alignment.topLeft,
                 child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.ink),
-                  onPressed: () => context.go(widget.mode == 'setup' ? '/setup-2fa' : '/login'),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.ink,
+                  ),
+                  onPressed: () => context.go(
+                    _phase == 'waiting'
+                        ? (widget.mode == 'setup' ? '/setup-2fa' : '/login')
+                        : '/home',
+                  ),
                 ),
               ),
               Expanded(
@@ -65,7 +108,9 @@ class _TwoFANotifPageState extends State<TwoFANotifPage> {
                       ),
                       const SizedBox(height: 26),
                       Text(
-                        _phase == 'approved' ? 'Disetujui!' : 'Cek notifikasi kamu',
+                        _phase == 'approved'
+                            ? 'Disetujui!'
+                            : 'Cek notifikasi kamu',
                         style: const TextStyle(
                           fontFamily: 'PlusJakartaSans',
                           fontSize: 23,
@@ -90,33 +135,49 @@ class _TwoFANotifPageState extends State<TwoFANotifPage> {
                       ),
                       if (_phase == 'waiting') ...[
                         const SizedBox(height: 34),
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
+                            const SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.4,
-                                valueColor: AlwaysStoppedAnimation(AppColors.green),
+                                valueColor: AlwaysStoppedAnimation(
+                                  AppColors.green,
+                                ),
                               ),
                             ),
-                            SizedBox(width: 10),
-                            Text('Menunggu persetujuan…',
-                                style: TextStyle(
-                                  fontFamily: 'PlusJakartaSans',
-                                  fontSize: 13.5,
-                                  color: AppColors.slate400,
-                                  fontWeight: FontWeight.w600,
-                                )),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Menunggu persetujuan (${_timeout}s)…',
+                              style: const TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                fontSize: 13.5,
+                                color: AppColors.slate400,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       ],
                       const Spacer(),
-                      const Text(
-                        'Tidak menerima notifikasi? Kirim ulang',
-                        style: TextStyle(fontSize: 12.5, color: AppColors.slate400),
-                      ),
+                      if (_phase == 'waiting')
+                        TextButton(
+                          onPressed: () {
+                            context.read<OtpBloc>().add(OtpSendFirebase());
+                            _startTimeoutTimer();
+                          },
+                          child: const Text(
+                            'Kirim ulang notifikasi',
+                            style: TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              fontSize: 12.5,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
