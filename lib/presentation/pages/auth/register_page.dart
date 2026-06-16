@@ -1,17 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../core/di/injection.dart';
-import '../../../core/errors/failures.dart';
-import '../../../core/theme/dkg_icons.dart';
-import '../../../domain/usecases/register_with_otp_usecase.dart';
+import '../../../core/error/failures.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../domain/usecases/auth/register_with_otp_usecase.dart';
+import '../../../injection/injection_container.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_field.dart';
+import '../../widgets/feature_icon.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
-
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
@@ -20,231 +19,202 @@ class _RegisterPageState extends State<RegisterPage> {
   String _name = '';
   String _email = '';
   String _pw = '';
-
+  bool _showPw = false;
   bool _agree = true;
   bool _loading = false;
-  bool _obscurePassword = true;
 
-  bool get _valid =>
-      _name.length > 1 &&
-      _email.contains('@') &&
-      _pw.length >= 6 &&
-      _agree;
+  bool get _valid => _name.length > 1 && _email.contains('@') && _pw.length >= 6 && _agree;
 
   Future<void> _register() async {
-    if (!_valid || _loading) return;
-
     setState(() => _loading = true);
-
     try {
-      // 1. Buat akun Firebase
-      final credential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _email.trim(),
+      // 1. Buat akun di Firebase
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _email,
         password: _pw,
       );
-
       await credential.user?.updateDisplayName(_name);
 
-      // 2. Ambil Firebase ID Token
+      // 2. Ambil Firebase ID Token lalu kirim ke backend
       final idToken = await credential.user?.getIdToken();
+      if (idToken == null) throw Exception('Gagal mendapatkan token Firebase');
 
-      if (idToken == null) {
-        throw Exception('Gagal mendapatkan token Firebase');
-      }
-
-      // 3. Kirim ke backend
       await sl<RegisterWithOtpUsecase>()(idToken);
 
-      // 4. Ke halaman verifikasi email
-      if (mounted) {
-        context.go('/verify-email');
-      }
+      // 3. Backend sudah buat user + kirim OTP ke email → ke halaman verifikasi
+      if (mounted) context.go('/verify-email');
     } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.message ?? 'Terjadi kesalahan saat membuat akun.',
-          ),
-        ),
-      );
-    } on ServerFailure catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.message),
-        ),
-      );
-    } on NetworkFailure {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak ada koneksi internet.'),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
-      );
-    } finally {
       if (mounted) {
-        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Registrasi gagal.'), backgroundColor: AppColors.red),
+        );
       }
+    } on ServerFailure catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.red),
+        );
+      }
+    } on NetworkFailure catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak ada koneksi internet.'), backgroundColor: AppColors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 20,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// Back Button
-              IconButton(
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.topLeft,
+              child: IconButton(
+                icon: const Icon(DkgIcons.arrowLeft, color: AppColors.ink),
                 onPressed: () => context.go('/'),
-                icon: const Icon(DkgIcons.arrowLeft),
               ),
-
-              const SizedBox(height: 20),
-
-              /// Title
-              const Text(
-                'Buat akun',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                'Daftar gratis dalam 1 menit',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              /// Nama Lengkap
-              AppField(
-                label: 'Nama lengkap',
-                prefixIcon: DkgIcons.user,
-                onChanged: (value) {
-                  setState(() => _name = value.trim());
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              /// Email
-              AppField(
-                label: 'Email',
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: DkgIcons.mail,
-                onChanged: (value) {
-                  setState(() => _email = value.trim());
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              /// Password
-              AppField(
-                label: 'Kata sandi',
-                prefixIcon: DkgIcons.lock,
-                obscureText: _obscurePassword,
-                onChanged: (value) {
-                  setState(() => _pw = value);
-                },
-                suffixIcon: IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                  icon: Icon(
-                    _obscurePassword
-                        ? DkgIcons.eye
-                        : DkgIcons.eyeOff,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// Agreement Checkbox
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _agree = !_agree;
-                  });
-                },
-                child: Row(
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(26, 10, 26, 24),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Checkbox(
-                      value: _agree,
-                      onChanged: (value) {
-                        setState(() {
-                          _agree = value ?? false;
-                        });
-                      },
+                    const Text('Buat akun',
+                        style: TextStyle(
+                          fontFamily: 'PlusJakartaSans',
+                          fontSize: 27,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                          letterSpacing: -0.4,
+                        )),
+                    const SizedBox(height: 6),
+                    const Text('Daftar gratis dalam 1 menit',
+                        style: TextStyle(fontSize: 14.5, color: AppColors.slate500)),
+                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
+                    AppField(
+                      label: 'Nama lengkap',
+                      value: _name,
+                      onChanged: (v) => setState(() => _name = v),
+                      placeholder: 'Nama Lengkap',
+                      prefixIcon: const Icon(DkgIcons.user, size: 20),
                     ),
-                    const Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(top: 12),
-                        child: Text(
-                          'Saya setuju dengan Syarat & Ketentuan dan Kebijakan Privasi',
-                        ),
+                    const SizedBox(height: 14),
+                    AppField(
+                      label: 'Email',
+                      value: _email,
+                      onChanged: (v) => setState(() => _email = v),
+                      placeholder: 'nama@email.com',
+                      keyboardType: TextInputType.emailAddress,
+                      prefixIcon: const Icon(DkgIcons.mail, size: 20),
+                    ),
+                    const SizedBox(height: 14),
+                    AppField(
+                      label: 'Kata sandi',
+                      value: _pw,
+                      onChanged: (v) => setState(() => _pw = v),
+                      obscureText: !_showPw,
+                      placeholder: 'Min. 6 karakter',
+                      prefixIcon: const Icon(DkgIcons.lock, size: 20),
+                      suffixIcon: IconButton(
+                        icon: Icon(_showPw ? DkgIcons.eyeOff : DkgIcons.eye,
+                            size: 20, color: AppColors.slate400),
+                        onPressed: () => setState(() => _showPw = !_showPw),
                       ),
+                    ),
+                    const SizedBox(height: 18),
+                    GestureDetector(
+                      onTap: () => setState(() => _agree = !_agree),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: _agree ? AppColors.primary : Colors.white,
+                              borderRadius: BorderRadius.circular(7),
+                              border: Border.all(
+                                color: _agree ? AppColors.primary : AppColors.line,
+                                width: 1.6,
+                              ),
+                            ),
+                            child: _agree
+                                ? const Icon(DkgIcons.check, size: 14, color: Colors.white)
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: RichText(
+                              text: const TextSpan(
+                                style: TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
+                                  fontSize: 13,
+                                  color: AppColors.slate500,
+                                  height: 1.5,
+                                ),
+                                children: [
+                                  TextSpan(text: 'Saya setuju dengan '),
+                                  TextSpan(
+                                    text: 'Syarat & Ketentuan',
+                                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                                  ),
+                                  TextSpan(text: ' dan '),
+                                  TextSpan(
+                                    text: 'Kebijakan Privasi',
+                                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                                  ),
+                                  TextSpan(text: '.'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    AppButton(
+                      label: 'Daftar',
+                      onPressed: _valid ? _register : null,
+                      isLoading: _loading,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Sudah punya akun? ',
+                            style: TextStyle(fontSize: 14, color: AppColors.ink)),
+                        GestureDetector(
+                          onTap: () => context.go('/login'),
+                          child: const Text('Masuk',
+                              style: TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              )),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
-
-              /// Register Button
-              AppButton(
-                label: 'Daftar',
-                onPressed: _valid && !_loading
-                    ? _register
-                    : null,
-                loading: _loading,
-              ),
-
-              const SizedBox(height: 24),
-
-              /// Login Link
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    context.go('/login');
-                  },
-                  child: const Text(
-                    'Sudah punya akun? Masuk',
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

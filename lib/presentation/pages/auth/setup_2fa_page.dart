@@ -1,16 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/dkg_icons.dart';
+import '../../widgets/app_badge.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/feature_icon.dart';
 
-class Setup2faPage extends StatefulWidget {
-  const Setup2faPage({super.key});
-
-  @override
-  State<Setup2faPage> createState() => _Setup2faPageState();
-}
+const _twoFaMethods = [
+  _TwoFaMethod(
+    key: 'smtp',
+    icon: DkgIcons.mail,
+    tone: 'blue',
+    title: 'Email OTP (SMTP)',
+    desc: 'Kode 6 digit dikirim ke email kamu setiap kali masuk.',
+    route: '/2fa/smtp',
+  ),
+  _TwoFaMethod(
+    key: 'totp',
+    icon: DkgIcons.smartphone,
+    tone: 'violet',
+    title: 'Authenticator (TOTP)',
+    desc: 'Kode berubah tiap 30 detik di Google Authenticator / Authy.',
+    route: '/2fa/totp',
+    badge: 'Paling aman',
+  ),
+  _TwoFaMethod(
+    key: 'notif',
+    icon: DkgIcons.bell,
+    tone: 'green',
+    title: 'Notifikasi OTP',
+    desc: 'Setujui permintaan masuk lewat notifikasi di HP kamu.',
+    route: '/2fa/notif',
+  ),
+];
 
 class _TwoFaMethod {
   final String key;
@@ -20,7 +41,6 @@ class _TwoFaMethod {
   final String desc;
   final String route;
   final String? badge;
-
   const _TwoFaMethod({
     required this.key,
     required this.icon,
@@ -32,200 +52,165 @@ class _TwoFaMethod {
   });
 }
 
-const _twoFaMethods = [
-  _TwoFaMethod(
-      key: 'smtp',
-      icon: DkgIcons.mail,
-      tone: 'blue',
-      title: 'Email OTP (SMTP)',
-      desc: 'Kode 6 digit dikirim ke email kamu setiap kali masuk.',
-      route: '/2fa/smtp'),
-  _TwoFaMethod(
-      key: 'totp',
-      icon: DkgIcons.smartphone,
-      tone: 'violet',
-      title: 'Authenticator (TOTP)',
-      desc: 'Kode berubah tiap 30 detik di Google Authenticator / Authy.',
-      route: '/2fa/totp',
-      badge: 'Paling aman'),
-  _TwoFaMethod(
-      key: 'notif',
-      icon: DkgIcons.bell,
-      tone: 'green',
-      title: 'Notifikasi OTP',
-      desc: 'Setujui permintaan masuk lewat notifikasi di HP kamu.',
-      route: '/2fa/notif'),
-];
-
-Color _toneColor(String tone) {
-  switch (tone) {
-    case 'blue':
-      return const Color(0xFF2563EB);
-    case 'violet':
-      return const Color(0xFF7C3AED);
-    case 'green':
-      return const Color(0xFF16A34A);
-    default:
-      return AppColors.ink;
-  }
+class Setup2FAPage extends StatefulWidget {
+  const Setup2FAPage({super.key});
+  @override
+  State<Setup2FAPage> createState() => _Setup2FAPageState();
 }
 
-class _Setup2faPageState extends State<Setup2faPage> {
+class _Setup2FAPageState extends State<Setup2FAPage> {
   String _selected = 'smtp';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(DkgIcons.arrowLeft, color: AppColors.ink),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/akun'),
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.ink.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(DkgIcons.shieldCheck,
-                          color: AppColors.ink, size: 28),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Amankan akunmu',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Pilih metode verifikasi 2 langkah untuk melindungi akunmu.',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.ink.withOpacity(0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ..._twoFaMethods.map((m) {
-                      final selected = m.key == _selected;
-                      final tone = _toneColor(m.tone);
-                      return GestureDetector(
-                        onTap: () => setState(() => _selected = m.key),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeInOut,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: selected
-                                ? tone.withOpacity(0.06)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: selected
-                                  ? tone
-                                  : AppColors.ink.withOpacity(0.12),
-                              width: selected ? 2 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: tone.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(m.icon, color: tone, size: 22),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            m.title,
-                                            style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.ink,
-                                            ),
-                                          ),
-                                        ),
-                                        if (m.badge != null) ...[
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: tone.withOpacity(0.12),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              m.badge!,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: tone,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      m.desc,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.ink.withOpacity(0.6),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              _RadioIndicator(selected: selected, tone: tone),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+            Align(
+              alignment: Alignment.topLeft,
+              child: IconButton(
+                icon: const Icon(DkgIcons.arrowLeft, color: AppColors.ink),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/akun'),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              padding: const EdgeInsets.fromLTRB(26, 8, 26, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySurface,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Center(
+                      child: Icon(DkgIcons.shieldCheck, size: 30, color: AppColors.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text('Amankan akunmu',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 25,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                        letterSpacing: -0.4,
+                      )),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Pilih metode verifikasi 2 langkah (2FA). Kamu bisa ganti kapan saja di Pengaturan.',
+                    style: TextStyle(
+                      fontFamily: 'PlusJakartaSans',
+                      fontSize: 14.5,
+                      color: AppColors.slate500,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(26, 22, 26, 0),
+                children: _twoFaMethods.map((m) {
+                  final on = _selected == m.key;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selected = m.key),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: const EdgeInsets.only(bottom: 13),
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: on ? AppColors.primarySurface : Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: on ? AppColors.primaryLight : AppColors.line,
+                          width: 1.8,
+                        ),
+                        boxShadow: on
+                            ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.08), blurRadius: 0, spreadRadius: 4)]
+                            : [],
+                      ),
+                      child: Row(
+                        children: [
+                          FeatureIcon(icon: m.icon, tone: m.tone),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(m.title,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontFamily: 'PlusJakartaSans',
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.ink,
+                                          )),
+                                    ),
+                                    if (m.badge != null) ...[
+                                      const SizedBox(width: 7),
+                                      AppBadge(label: m.badge!, tone: 'green'),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(m.desc,
+                                    style: const TextStyle(
+                                      fontFamily: 'PlusJakartaSans',
+                                      fontSize: 12.8,
+                                      color: AppColors.slate500,
+                                      height: 1.45,
+                                    )),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: on ? AppColors.primary : Colors.white,
+                              border: Border.all(
+                                color: on ? AppColors.primary : AppColors.line,
+                                width: 2,
+                              ),
+                            ),
+                            child: on
+                                ? Center(
+                                    child: Container(
+                                      width: 9,
+                                      height: 9,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(26, 14, 26, 22),
               child: AppButton(
                 label: 'Lanjutkan',
                 onPressed: () {
-                  final m =
-                      _twoFaMethods.firstWhere((m) => m.key == _selected);
+                  final m = _twoFaMethods.firstWhere((m) => m.key == _selected);
                   context.go(m.route, extra: {'mode': 'setup'});
                 },
               ),
@@ -233,41 +218,6 @@ class _Setup2faPageState extends State<Setup2faPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _RadioIndicator extends StatelessWidget {
-  final bool selected;
-  final Color tone;
-
-  const _RadioIndicator({required this.selected, required this.tone});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: 22,
-      height: 22,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: selected ? tone : AppColors.ink.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: selected
-          ? Center(
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: tone,
-                ),
-              ),
-            )
-          : null,
     );
   }
 }

@@ -1,14 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
 
-
-import '../../bloc/auth/auth_bloc.dart';
-import '../../bloc/auth/auth_event.dart';
-import '../../bloc/auth/auth_state.dart';
+import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/app_logo.dart';
 import '../../widgets/app_field.dart';
 import '../../widgets/app_button.dart';
@@ -21,38 +17,19 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _pwController = TextEditingController();
+  String _email = '';
+  String _pw = '';
 
-  String get _email => _emailController.text.trim();
-  String get _pw => _pwController.text;
+  bool _gLoading = false;
+  bool _obscurePw = true;
 
-  bool _gLoading = false;       // loading khusus tombol Google
-  bool _obscurePw = true;       // toggle show/hide kata sandi
-
-  // Validasi sederhana: email mengandung "@" & "." dan password >= 6 karakter
+  // Validasi email dengan regex yang lebih akurat
   bool get _valid {
-    final email = _email;
-    final pw = _pw;
-    final emailOk = email.contains('@') && email.contains('.');
-    return emailOk && pw.length >= 6;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Update tombol "Masuk" enable/disable secara real-time
-    _emailController.addListener(_onChanged);
-    _pwController.addListener(_onChanged);
-  }
-
-  void _onChanged() => setState(() {});
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _pwController.dispose();
-    super.dispose();
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    final emailOk = emailRegex.hasMatch(_email.trim());
+    return emailOk && _pw.length >= 6;
   }
 
   // ---------------------------------------------------------------------------
@@ -62,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _gLoading = true);
     try {
       final googleSignIn = GoogleSignIn();
-      await googleSignIn.signOut(); // agar dialog pilih akun selalu muncul
+      await googleSignIn.signOut();
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         setState(() => _gLoading = false);
@@ -74,8 +51,9 @@ class _LoginPageState extends State<LoginPage> {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
       final idToken = await userCredential.user?.getIdToken();
       if (idToken != null && mounted) {
         context.read<AuthBloc>().add(AuthLoginWithFirebase(idToken));
@@ -88,9 +66,9 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
       }
     } finally {
       if (mounted) setState(() => _gLoading = false);
@@ -103,20 +81,40 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _loginWithEmail() async {
     if (!_valid) return;
     try {
-      final userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _email,
-        password: _pw,
-      );
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: _email.trim(), password: _pw);
       final idToken = await userCredential.user?.getIdToken();
+
       if (idToken != null && mounted) {
         context.read<AuthBloc>().add(AuthLoginWithFirebase(idToken));
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal mendapatkan token. Silakan coba lagi'),
+          ),
+        );
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Email atau kata sandi salah')),
-        );
+        String message = 'Email atau kata sandi salah';
+        if (e.code == 'user-not-found') {
+          message = 'Email tidak terdaftar';
+        } else if (e.code == 'wrong-password') {
+          message = 'Kata sandi salah';
+        } else if (e.code == 'invalid-email') {
+          message = 'Format email tidak valid';
+        } else if (e.code == 'user-disabled') {
+          message = 'Akun telah dinonaktifkan';
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
       }
     }
   }
@@ -143,9 +141,9 @@ class _LoginPageState extends State<LoginPage> {
             } else if (state is AuthAuthenticated) {
               context.go('/home');
             } else if (state is AuthError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
-              );
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(state.message)));
             }
           },
           child: SingleChildScrollView(
@@ -161,15 +159,15 @@ class _LoginPageState extends State<LoginPage> {
                 Text(
                   'Masuk',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Selamat datang kembali',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 32),
 
@@ -200,7 +198,9 @@ class _LoginPageState extends State<LoginPage> {
                                   const Icon(Icons.login, size: 20),
                             ),
                       label: Text(
-                        isConnecting ? 'Menghubungkan…' : 'Lanjut dengan Google',
+                        isConnecting
+                            ? 'Menghubungkan…'
+                            : 'Lanjut dengan Google',
                       ),
                     );
                   },
@@ -225,25 +225,31 @@ class _LoginPageState extends State<LoginPage> {
 
                 // AppField Email
                 AppField(
-                  controller: _emailController,
                   label: 'Email',
-                  hintText: 'nama@email.com',
+                  placeholder: 'nama@email.com',
+                  value: _email,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  onChanged: (val) => setState(() => _email = val),
                 ),
                 const SizedBox(height: 16),
 
                 // AppField Kata sandi (dengan toggle show/hide)
                 AppField(
-                  controller: _pwController,
                   label: 'Kata sandi',
-                  hintText: 'Masukkan kata sandi',
+                  placeholder: 'Masukkan kata sandi',
+                  value: _pw,
                   obscureText: _obscurePw,
+                  textInputAction: TextInputAction.done,
+                  onChanged: (val) => setState(() => _pw = val),
+                  onEditingComplete: () {
+                    if (_valid) _loginWithEmail();
+                  },
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePw ? Icons.visibility_off : Icons.visibility,
                     ),
-                    onPressed: () =>
-                        setState(() => _obscurePw = !_obscurePw),
+                    onPressed: () => setState(() => _obscurePw = !_obscurePw),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -263,9 +269,13 @@ class _LoginPageState extends State<LoginPage> {
                   builder: (context, state) {
                     final isLoading = state is AuthLoading;
                     return AppButton(
-                      text: 'Masuk',
+                      label: 'Masuk',
                       isLoading: isLoading,
-                      onPressed: (_valid && !isLoading) ? _loginWithEmail : null,
+                      onPressed: (_valid && !isLoading)
+                          ? _loginWithEmail
+                          : null,
+                      variant: AppButtonVariant.primary,
+                      size: AppButtonSize.lg,
                     );
                   },
                 ),
