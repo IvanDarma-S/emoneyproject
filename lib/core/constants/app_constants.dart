@@ -3,7 +3,8 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // API
-  static const String baseUrl = 'http://192.168.0.7:8080'; // Android emulator → localhost
+  static const String baseUrl =
+      'http://192.168.18.57:8080'; // Android emulator → localhost
   static const String apiVersion = '/v1';
   static const int connectTimeout = 30;
   static const int receiveTimeout = 30;

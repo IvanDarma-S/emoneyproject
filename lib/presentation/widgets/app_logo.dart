@@ -18,7 +18,7 @@ class AppLogo extends StatelessWidget {
     const fontFamily = 'PlusJakartaSans';
 
     Widget icon = Image.asset(
-      'assets/images/logo-dompet.jpeg',
+      'assets/images/logo-dompet.png',
       width: size,
       height: size,
       fit: BoxFit.contain,
