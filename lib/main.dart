@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
+// 1. IMPORT FILE INI (Pastikan Anda sudah menjalankan 'flutterfire configure')
+import 'firebase_options.dart';
 import 'injection/injection_container.dart' as di;
 
 void main() async {
@@ -12,8 +14,8 @@ void main() async {
 
   Bloc.observer = const AppBlocObserver();
 
-  // Initialize Firebase — pastikan google-services.json/GoogleService-Info.plist sudah ada
-  await Firebase.initializeApp();
+  // 2. PERBAIKAN: Tambahkan options agar support Flutter Web & Mobile sekaligus
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize dependency injection
   await di.init();
@@ -25,10 +27,12 @@ void main() async {
   ]);
 
   // Status bar style
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   runApp(const DompetKampusApp());
 }
