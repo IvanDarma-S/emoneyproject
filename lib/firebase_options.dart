@@ -25,7 +25,10 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
@@ -40,50 +43,39 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyB0eQUfus6ed1gbJkNNDpK0GWKwWUyrO_8',
-    appId: '1:701230577881:web:69580aaf961c76db24a6c8',
-    messagingSenderId: '701230577881',
-    projectId: 'emoney-project-83650',
-    authDomain: 'emoney-project-83650.firebaseapp.com',
-    storageBucket: 'emoney-project-83650.firebasestorage.app',
-    measurementId: 'G-XR4MMW44Y1',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDZp56rjv_dXc1tvbVDGLWY7BauGpEX9fk',
-    appId: '1:701230577881:android:c791e1311ceb7bc724a6c8',
-    messagingSenderId: '701230577881',
-    projectId: 'emoney-project-83650',
-    storageBucket: 'emoney-project-83650.firebasestorage.app',
+    apiKey: 'AIzaSyBLAE-pREXw0lAvX3JAEj_7lvbVPJw6hVg',
+    appId: '1:474201715625:android:a08239f0b9e335fbb14ab8',
+    messagingSenderId: '474201715625',
+    projectId: 'emoney-project-a25e6',
+    storageBucket: 'emoney-project-a25e6.firebasestorage.app',
   );
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyB0eQUfus6ed1gbJkNNDpK0GWKwWUyrO_8',
-    appId: '1:701230577881:web:69580aaf961c76db24a6c8',
-    messagingSenderId: '701230577881',
-    projectId: 'emoney-project-83650',
-    authDomain: 'emoney-project-83650.firebaseapp.com',
-    storageBucket: 'emoney-project-83650.firebasestorage.app',
-    measurementId: 'G-XR4MMW44Y1',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyATGxhFRusjQkumoMh-JBLcpi5B_5fcofc',
-    appId: '1:701230577881:ios:e17691ad61272fa824a6c8',
-    messagingSenderId: '701230577881',
-    projectId: 'emoney-project-83650',
-    storageBucket: 'emoney-project-83650.firebasestorage.app',
-    iosClientId: '701230577881-8rjghnq6calrspr945hpvuhjv4aes77o.apps.googleusercontent.com',
-    iosBundleId: 'com.example.dompetKampusGlobal',
-  );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyATGxhFRusjQkumoMh-JBLcpi5B_5fcofc',
-    appId: '1:701230577881:ios:e17691ad61272fa824a6c8',
-    messagingSenderId: '701230577881',
-    projectId: 'emoney-project-83650',
-    storageBucket: 'emoney-project-83650.firebasestorage.app',
-    iosClientId: '701230577881-8rjghnq6calrspr945hpvuhjv4aes77o.apps.googleusercontent.com',
-    iosBundleId: 'com.example.dompetKampusGlobal',
+    apiKey: 'AIzaSyA46uBUvmVQKsSL7HIXZG58MD9jXQCFX7c',
+    appId: '1:948878883710:ios:5363ad2b9fbe06b2a0512f',
+    messagingSenderId: '948878883710',
+    projectId: 'fir-emoney-e9256',
+    storageBucket: 'fir-emoney-e9256.firebasestorage.app',
+    iosBundleId: 'com.kampus.dompetKampusGlobal',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCksFCfCdyFuV5i0XSdT1pQm6wSe1VLBSg',
+    appId: '1:474201715625:web:ca703b02897e82b3b14ab8',
+    messagingSenderId: '474201715625',
+    projectId: 'emoney-project-a25e6',
+    authDomain: 'emoney-project-a25e6.firebaseapp.com',
+    storageBucket: 'emoney-project-a25e6.firebasestorage.app',
+    measurementId: 'G-QRXFP9223X',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCksFCfCdyFuV5i0XSdT1pQm6wSe1VLBSg',
+    appId: '1:474201715625:web:63974cae624b966db14ab8',
+    messagingSenderId: '474201715625',
+    projectId: 'emoney-project-a25e6',
+    authDomain: 'emoney-project-a25e6.firebaseapp.com',
+    storageBucket: 'emoney-project-a25e6.firebasestorage.app',
+    measurementId: 'G-FQBK5VHN34',
   );
 }

@@ -23,6 +23,17 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
+	<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLName</key>
+        <string>com.kampus.dompetKampusGlobal.payment</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>dompetkampus</string>
+        </array>
+    </dict>
+</array>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

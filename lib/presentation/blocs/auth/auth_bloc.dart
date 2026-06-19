@@ -87,6 +87,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
       return;
     }
+    // Pastikan ApiClient memiliki token sebelum request berikutnya —
+    // diperlukan jika app di-restart karena ApiClient dibuat ulang tanpa token.
+    await _authRepo.restoreApiToken();
     final user = await _authRepo.getSavedUser();
     if (user == null) {
       emit(AuthUnauthenticated());

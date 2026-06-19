@@ -93,6 +93,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<String?> getSavedToken() => _local.getToken();
 
   @override
+  Future<void> restoreApiToken() async {
+    final token = await _local.getToken();
+    if (token != null) _remote.setAuthToken(token);
+  }
+
+  @override
   Future<UserEntity?> getSavedUser() async {
     final json = await _local.getUserJson();
     if (json == null) return null;

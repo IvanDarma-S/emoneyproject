@@ -1,62 +1,33 @@
 {
   "project_info": {
-    "project_number": "701230577881",
-    "project_id": "emoney-project-83650",
-    "storage_bucket": "emoney-project-83650.firebasestorage.app"
+    "project_number": "474201715625",
+    "project_id": "emoney-project-a25e6",
+    "storage_bucket": "emoney-project-a25e6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:701230577881:android:606b70392c782ff724a6c8",
-        "android_client_info": {
-          "package_name": "com.emoney.project"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "701230577881-a2t0d3vvkv9v93k5j9pgrvp55gcji9c6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDZp56rjv_dXc1tvbVDGLWY7BauGpEX9fk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "701230577881-a2t0d3vvkv9v93k5j9pgrvp55gcji9c6.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:701230577881:android:c791e1311ceb7bc724a6c8",
+        "mobilesdk_app_id": "1:474201715625:android:a08239f0b9e335fbb14ab8",
         "android_client_info": {
           "package_name": "com.example.dompet_kampus_global"
         }
       },
       "oauth_client": [
         {
-          "client_id": "701230577881-a2t0d3vvkv9v93k5j9pgrvp55gcji9c6.apps.googleusercontent.com",
+          "client_id": "474201715625-guol4ju8nq58k747o4bsdj3ajkfkn436.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDZp56rjv_dXc1tvbVDGLWY7BauGpEX9fk"
+          "current_key": "AIzaSyBLAE-pREXw0lAvX3JAEj_7lvbVPJw6hVg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "701230577881-a2t0d3vvkv9v93k5j9pgrvp55gcji9c6.apps.googleusercontent.com",
+              "client_id": "474201715625-guol4ju8nq58k747o4bsdj3ajkfkn436.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

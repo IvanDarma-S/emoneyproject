@@ -8,6 +8,7 @@ abstract class AuthRemoteDatasource {
   Future<void> verifyEmailOtp(String code);
   Future<UserModel> getMe();
   Future<void> updateFcmToken(String fcmToken);
+  void setAuthToken(String token);
   void clearAuthToken();
 }
 
@@ -55,6 +56,11 @@ class AuthRemoteDatasourceImpl implements AuthRemoteDatasource {
   @override
   Future<void> updateFcmToken(String fcmToken) async {
     await _client.put(ApiEndpoints.fcmToken, data: {'fcm_token': fcmToken});
+  }
+
+  @override
+  void setAuthToken(String token) {
+    _client.setAuthToken(token);
   }
 
   @override

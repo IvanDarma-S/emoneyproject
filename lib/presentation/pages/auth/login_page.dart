@@ -1,13 +1,15 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import '../../widgets/app_logo.dart';
-import '../../widgets/app_field.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_field.dart';
+import '../../widgets/app_logo.dart';
+import '../../widgets/feature_icon.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,293 +21,273 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   String _email = '';
   String _pw = '';
-
+  bool _showPw = false;
   bool _gLoading = false;
-  bool _obscurePw = true;
 
-  // Validasi email dengan regex yang lebih akurat
-  bool get _valid {
-    final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-    );
-    final emailOk = emailRegex.hasMatch(_email.trim());
-    return emailOk && _pw.length >= 6;
-  }
+  bool get _valid => _email.contains('@') && _pw.length >= 4;
 
-  // ---------------------------------------------------------------------------
-  // Google Sign-In
-  // ---------------------------------------------------------------------------
   Future<void> _loginWithGoogle() async {
     setState(() => _gLoading = true);
     try {
+      debugPrint('[Auth] Google sign-in: memulai...');
       final googleSignIn = GoogleSignIn();
+      // Keluar dari sesi Google yang ter-cache agar dialog pilih akun selalu muncul
       await googleSignIn.signOut();
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
+        debugPrint('[Auth] Google sign-in: dibatalkan user');
         setState(() => _gLoading = false);
         return;
       }
+      debugPrint('[Auth] Google sign-in: akun dipilih → ${googleUser.email}');
 
       final googleAuth = await googleUser.authentication;
+      debugPrint(
+          '[Auth] Google auth: accessToken=${googleAuth.accessToken != null ? "OK" : "NULL"}, '
+          'idToken=${googleAuth.idToken != null ? "OK" : "NULL"}');
+
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      debugPrint('[Auth] Firebase sign-in OK → uid=${userCredential.user?.uid}');
+
       final idToken = await userCredential.user?.getIdToken();
+      debugPrint(
+          '[Auth] Firebase ID token: ${idToken != null ? "OK (${idToken.length} chars)" : "NULL"}');
+
       if (idToken != null && mounted) {
+        debugPrint('[Auth] Kirim token ke backend → POST /v1/auth/verify-token');
         context.read<AuthBloc>().add(AuthLoginWithFirebase(idToken));
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (e, st) {
+      debugPrint('[Auth] Google sign-in ERROR: $e\n$st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Gagal masuk dengan Google')),
+          SnackBar(content: Text('Login Google gagal: $e')),
         );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
       }
     } finally {
       if (mounted) setState(() => _gLoading = false);
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Email & Password Sign-In
-  // ---------------------------------------------------------------------------
   Future<void> _loginWithEmail() async {
-    if (!_valid) return;
     try {
-      final userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: _email.trim(), password: _pw);
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _email,
+        password: _pw,
+      );
       final idToken = await userCredential.user?.getIdToken();
-
       if (idToken != null && mounted) {
         context.read<AuthBloc>().add(AuthLoginWithFirebase(idToken));
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal mendapatkan token. Silakan coba lagi'),
-          ),
-        );
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
-        String message = 'Email atau kata sandi salah';
-        if (e.code == 'user-not-found') {
-          message = 'Email tidak terdaftar';
-        } else if (e.code == 'wrong-password') {
-          message = 'Kata sandi salah';
-        } else if (e.code == 'invalid-email') {
-          message = 'Format email tidak valid';
-        } else if (e.code == 'user-disabled') {
-          message = 'Akun telah dinonaktifkan';
-        }
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Login gagal.')),
+        );
       }
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
-      ),
-      body: SafeArea(
-        child: BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AuthNeedsVerification) {
-              context.go('/2fa/smtp');
-            } else if (state is AuthAuthenticated) {
-              context.go('/home');
-            } else if (state is AuthError) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
-            }
-          },
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 24),
-
-                // Logo + Judul
-                const Center(child: AppLogo()),
-                const SizedBox(height: 24),
-                Text(
-                  'Masuk',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthNeedsVerification) {
+          context.go('/2fa/smtp');
+        } else if (state is AuthAuthenticated) {
+          context.go('/home');
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: AppColors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  icon: const Icon(DkgIcons.arrowLeft, color: AppColors.ink),
+                  onPressed: () => context.go('/'),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Selamat datang kembali',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 32),
-
-                // Tombol "Lanjut dengan Google"
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    final isConnecting = state is AuthLoading || _gLoading;
-                    return OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey[300]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: isConnecting ? null : _loginWithGoogle,
-                      icon: isConnecting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Image.asset(
-                              'assets/icons/google.png',
-                              width: 20,
-                              height: 20,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.login, size: 20),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(26, 10, 26, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const AppLogo(size: 50),
+                      const SizedBox(height: 22),
+                      const Text('Masuk',
+                          style: TextStyle(
+                            fontFamily: 'PlusJakartaSans',
+                            fontSize: 27,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.ink,
+                            letterSpacing: -0.4,
+                          )),
+                      const SizedBox(height: 6),
+                      const Text('Selamat datang kembali',
+                          style: TextStyle(fontSize: 14.5, color: AppColors.slate500)),
+                      const SizedBox(height: 24),
+                      // Google sign in
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          final loading = state is AuthLoading || _gLoading;
+                          return GestureDetector(
+                            onTap: loading ? null : _loginWithGoogle,
+                            child: Container(
+                              height: 54,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: AppColors.line, width: 1.5),
+                                boxShadow: AppColors.shadowSoft,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: loading
+                                    ? const [
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.4,
+                                            valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                                          ),
+                                        ),
+                                        SizedBox(width: 11),
+                                        Text('Menghubungkan…',
+                                            style: TextStyle(
+                                              fontFamily: 'PlusJakartaSans',
+                                              fontSize: 15.5,
+                                              fontWeight: FontWeight.w700,
+                                            )),
+                                      ]
+                                    : const [
+                                        _GoogleIcon(),
+                                        SizedBox(width: 11),
+                                        Text('Lanjut dengan Google',
+                                            style: TextStyle(
+                                              fontFamily: 'PlusJakartaSans',
+                                              fontSize: 15.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.ink,
+                                            )),
+                                      ],
+                              ),
                             ),
-                      label: Text(
-                        isConnecting
-                            ? 'Menghubungkan…'
-                            : 'Lanjut dengan Google',
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Divider "atau email"
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey[300])),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        'atau email',
-                        style: TextStyle(color: Colors.grey[600]),
+                      const SizedBox(height: 22),
+                      Row(children: [
+                        const Expanded(child: Divider(color: AppColors.line)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: const Text('atau email',
+                              style: TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slate400,
+                              )),
+                        ),
+                        const Expanded(child: Divider(color: AppColors.line)),
+                      ]),
+                      const SizedBox(height: 22),
+                      AppField(
+                        label: 'Email',
+                        value: _email,
+                        onChanged: (v) => setState(() => _email = v),
+                        placeholder: 'nama@email.com',
+                        keyboardType: TextInputType.emailAddress,
+                        prefixIcon: const Icon(DkgIcons.mail, size: 20),
                       ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey[300])),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // AppField Email
-                AppField(
-                  label: 'Email',
-                  placeholder: 'nama@email.com',
-                  value: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  onChanged: (val) => setState(() => _email = val),
-                ),
-                const SizedBox(height: 16),
-
-                // AppField Kata sandi (dengan toggle show/hide)
-                AppField(
-                  label: 'Kata sandi',
-                  placeholder: 'Masukkan kata sandi',
-                  value: _pw,
-                  obscureText: _obscurePw,
-                  textInputAction: TextInputAction.done,
-                  onChanged: (val) => setState(() => _pw = val),
-                  onEditingComplete: () {
-                    if (_valid) _loginWithEmail();
-                  },
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePw ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () => setState(() => _obscurePw = !_obscurePw),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Link "Lupa kata sandi?"
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => context.go('/forgot-password'),
-                    child: const Text('Lupa kata sandi?'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Tombol "Masuk"
-                BlocBuilder<AuthBloc, AuthState>(
-                  builder: (context, state) {
-                    final isLoading = state is AuthLoading;
-                    return AppButton(
-                      label: 'Masuk',
-                      isLoading: isLoading,
-                      onPressed: (_valid && !isLoading)
-                          ? _loginWithEmail
-                          : null,
-                      variant: AppButtonVariant.primary,
-                      size: AppButtonSize.lg,
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Link "Belum punya akun? Daftar"
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Belum punya akun? ',
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    GestureDetector(
-                      onTap: () => context.go('/register'),
-                      child: Text(
-                        'Daftar',
-                        style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 14),
+                      AppField(
+                        label: 'Kata sandi',
+                        value: _pw,
+                        onChanged: (v) => setState(() => _pw = v),
+                        obscureText: !_showPw,
+                        placeholder: '••••••••',
+                        prefixIcon: const Icon(DkgIcons.lock, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(_showPw ? DkgIcons.eyeOff : DkgIcons.eye,
+                              size: 20, color: AppColors.slate400),
+                          onPressed: () => setState(() => _showPw = !_showPw),
                         ),
                       ),
-                    ),
-                  ],
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {},
+                          child: const Text('Lupa kata sandi?',
+                              style: TextStyle(
+                                fontFamily: 'PlusJakartaSans',
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.5,
+                              )),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) => AppButton(
+                          label: 'Masuk',
+                          onPressed: _valid ? _loginWithEmail : null,
+                          isLoading: state is AuthLoading,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Belum punya akun? ',
+                              style: TextStyle(fontSize: 14, color: AppColors.slate500)),
+                          GestureDetector(
+                            onTap: () => context.go('/register'),
+                            child: const Text('Daftar',
+                                style: TextStyle(
+                                  fontFamily: 'PlusJakartaSans',
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                )),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GoogleIcon extends StatelessWidget {
+  const _GoogleIcon();
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 21,
+      height: 21,
+      child: Image.network(
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/24px-Google_%22G%22_logo.svg.png',
+        errorBuilder: (_, __, ___) =>
+            const Icon(Icons.g_mobiledata_rounded, size: 24, color: Colors.red),
       ),
     );
   }

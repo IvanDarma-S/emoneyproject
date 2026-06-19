@@ -17,6 +17,7 @@ import '../../presentation/pages/auth/verify_email_page.dart';
 import '../../presentation/pages/history/history_page.dart';
 import '../../presentation/pages/home/home_page.dart';
 import '../../presentation/pages/merchant/merchant_checkout_page.dart';
+import '../../presentation/pages/payment/payment_deeplink_page.dart';
 import '../../presentation/pages/payment/payment_qr_page.dart';
 import '../../presentation/pages/payment/pin_page.dart';
 import '../../presentation/pages/promo/promo_page.dart';
@@ -31,7 +32,9 @@ import '../../presentation/widgets/app_tab_bar.dart';
 class AppRouter {
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-  static GoRouter get router => GoRouter(
+  // static final (bukan getter) agar GoRouter dibuat sekali saja —
+  // instance yang sama dipakai oleh MaterialApp.router dan DeeplinkService.
+  static final GoRouter router = GoRouter(
         navigatorKey: _rootNavigatorKey,
         initialLocation: '/',
         routes: [
@@ -160,6 +163,11 @@ class AppRouter {
             },
           ),
           GoRoute(path: '/merchant', builder: (_, __) => _withPayment(const MerchantCheckoutPage())),
+          // Pembayaran via deeplink merchant (dompetkampus://pay?... atau https://dompetkampus.app/pay?...)
+          GoRoute(
+            path: '/pay',
+            builder: (_, state) => _withPayment(PaymentDeeplinkPage(data: state.extra)),
+          ),
         ],
       );
 
@@ -186,6 +194,7 @@ class AppRouter {
       BlocProvider(create: (_) => sl<AuthBloc>()),
       BlocProvider(create: (_) => sl<AccountBloc>()),
       BlocProvider(create: (_) => sl<PaymentBloc>()),
+      BlocProvider(create: (_) => sl<OtpBloc>()),
     ], child: child);
   }
 }
