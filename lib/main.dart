@@ -7,6 +7,7 @@ import 'core/services/deeplink_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_bloc_observer.dart';
 import 'injection/injection_container.dart' as di;
+import 'firebase_options.dart'; // <--- TAMBAHKAN BARIS INI
 
 // Top-level variable — mencegah DeeplinkService di-garbage collect selama
 // proses berjalan sehingga uriLinkStream tetap aktif untuk in-app deeplinks.
@@ -18,7 +19,7 @@ void main() async {
   Bloc.observer = const AppBlocObserver();
 
   // Initialize Firebase — pastikan google-services.json/GoogleService-Info.plist sudah ada
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize dependency injection
   await di.init();
@@ -30,10 +31,12 @@ void main() async {
   ]);
 
   // Status bar style
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
 
   // Simpan instance agar tidak di-GC — stream subscription harus tetap hidup
   // untuk menerima in-app deeplinks via onNewIntent (Android singleTop).

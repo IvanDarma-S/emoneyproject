@@ -23,16 +23,15 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _agree = true;
   bool _loading = false;
 
-  bool get _valid => _name.length > 1 && _email.contains('@') && _pw.length >= 6 && _agree;
+  bool get _valid =>
+      _name.length > 1 && _email.contains('@') && _pw.length >= 6 && _agree;
 
   Future<void> _register() async {
     setState(() => _loading = true);
     try {
       // 1. Buat akun di Firebase
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _email,
-        password: _pw,
-      );
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: _email, password: _pw);
       await credential.user?.updateDisplayName(_name);
 
       // 2. Ambil Firebase ID Token lalu kirim ke backend
@@ -44,27 +43,46 @@ class _RegisterPageState extends State<RegisterPage> {
       // 3. Backend sudah buat user + kirim OTP ke email → ke halaman verifikasi
       if (mounted) context.go('/verify-email');
     } on FirebaseAuthException catch (e) {
+      debugPrint('==> Firebase Auth Error: [${e.code}] ${e.message}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Registrasi gagal.'), backgroundColor: AppColors.red),
+          SnackBar(
+            content: Text(e.message ?? 'Registrasi Firebase gagal.'),
+            backgroundColor: AppColors.red,
+          ),
         );
       }
     } on ServerFailure catch (e) {
+      debugPrint('==> Server Failure: ${e.message}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message), backgroundColor: AppColors.red),
+          SnackBar(
+            content: Text('Server Error: ${e.message}'),
+            backgroundColor: AppColors.red,
+          ),
         );
       }
-    } on NetworkFailure catch (_) {
+    } on NetworkFailure catch (e) {
+      // Menampilkan error network bawaan jika ada pesan spesifik dari HTTP client (misal: Dio/Http)
+      debugPrint('==> Network Failure: ${e.toString()}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tidak ada koneksi internet.'), backgroundColor: AppColors.red),
+          SnackBar(
+            content: Text('Koneksi bermasalah atau backend tidak merespons.'),
+            backgroundColor: AppColors.red,
+          ),
         );
       }
-    } catch (e) {
+    } catch (e, stacktrace) {
+      // Blok catch-all ini sangat penting untuk menangkap error tidak terduga
+      debugPrint('==> Unknown Error: $e');
+      debugPrint('==> Stacktrace: $stacktrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red),
+          SnackBar(
+            content: Text('Terjadi kesalahan sistem: $e'),
+            backgroundColor: AppColors.red,
+          ),
         );
       }
     } finally {
@@ -92,17 +110,24 @@ class _RegisterPageState extends State<RegisterPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Buat akun',
-                        style: TextStyle(
-                          fontFamily: 'PlusJakartaSans',
-                          fontSize: 27,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.ink,
-                          letterSpacing: -0.4,
-                        )),
+                    const Text(
+                      'Buat akun',
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        fontSize: 27,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    const Text('Daftar gratis dalam 1 menit',
-                        style: TextStyle(fontSize: 14.5, color: AppColors.slate500)),
+                    const Text(
+                      'Daftar gratis dalam 1 menit',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        color: AppColors.slate500,
+                      ),
+                    ),
                     const SizedBox(height: 22),
                     const SizedBox(height: 20),
                     AppField(
@@ -130,8 +155,11 @@ class _RegisterPageState extends State<RegisterPage> {
                       placeholder: 'Min. 6 karakter',
                       prefixIcon: const Icon(DkgIcons.lock, size: 20),
                       suffixIcon: IconButton(
-                        icon: Icon(_showPw ? DkgIcons.eyeOff : DkgIcons.eye,
-                            size: 20, color: AppColors.slate400),
+                        icon: Icon(
+                          _showPw ? DkgIcons.eyeOff : DkgIcons.eye,
+                          size: 20,
+                          color: AppColors.slate400,
+                        ),
                         onPressed: () => setState(() => _showPw = !_showPw),
                       ),
                     ),
@@ -149,12 +177,18 @@ class _RegisterPageState extends State<RegisterPage> {
                               color: _agree ? AppColors.primary : Colors.white,
                               borderRadius: BorderRadius.circular(7),
                               border: Border.all(
-                                color: _agree ? AppColors.primary : AppColors.line,
+                                color: _agree
+                                    ? AppColors.primary
+                                    : AppColors.line,
                                 width: 1.6,
                               ),
                             ),
                             child: _agree
-                                ? const Icon(DkgIcons.check, size: 14, color: Colors.white)
+                                ? const Icon(
+                                    DkgIcons.check,
+                                    size: 14,
+                                    color: Colors.white,
+                                  )
                                 : null,
                           ),
                           const SizedBox(width: 10),
@@ -171,12 +205,18 @@ class _RegisterPageState extends State<RegisterPage> {
                                   TextSpan(text: 'Saya setuju dengan '),
                                   TextSpan(
                                     text: 'Syarat & Ketentuan',
-                                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   TextSpan(text: ' dan '),
                                   TextSpan(
                                     text: 'Kebijakan Privasi',
-                                    style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                   TextSpan(text: '.'),
                                 ],
@@ -196,17 +236,21 @@ class _RegisterPageState extends State<RegisterPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Sudah punya akun? ',
-                            style: TextStyle(fontSize: 14, color: AppColors.ink)),
+                        const Text(
+                          'Sudah punya akun? ',
+                          style: TextStyle(fontSize: 14, color: AppColors.ink),
+                        ),
                         GestureDetector(
                           onTap: () => context.go('/login'),
-                          child: const Text('Masuk',
-                              style: TextStyle(
-                                fontFamily: 'PlusJakartaSans',
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              )),
+                          child: const Text(
+                            'Masuk',
+                            style: TextStyle(
+                              fontFamily: 'PlusJakartaSans',
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ],
                     ),
