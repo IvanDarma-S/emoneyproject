@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "474201715625-eitlqapofrp3oruqc6um7ijapn19ljum.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dompet_kampus_global",
+            "certificate_hash": "ca354e4b888eb844c5e656517cbd86af436774f5"
+          }
+        },
+        {
           "client_id": "474201715625-guol4ju8nq58k747o4bsdj3ajkfkn436.apps.googleusercontent.com",
           "client_type": 3
         }

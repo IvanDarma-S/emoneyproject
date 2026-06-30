@@ -1,1 +1,23 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"emoney-project-a25e6","appId":"1:474201715625:android:a08239f0b9e335fbb14ab8","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"emoney-project-a25e6","configurations":{"android":"1:474201715625:android:a08239f0b9e335fbb14ab8","web":"1:474201715625:web:ca703b02897e82b3b14ab8","windows":"1:474201715625:web:63974cae624b966db14ab8"}}}}}}
+{
+    "flutter": {
+      "platforms": {
+        "android": {
+          "default": {
+            "projectId": "emoney-project-a25e6",
+            "appId": "1:474201715625:android:a08239f0b9e335fbb14ab8",
+            "fileOutput": "android/app/google-services.json"
+          }
+        },
+        "dart": {
+          "lib/firebase_options.dart": {
+            "projectId": "emoney-project-a25e6",
+            "configurations": {
+              "android": "1:474201715625:android:a08239f0b9e335fbb14ab8",
+              "web": "1:474201715625:web:ca703b02897e82b3b14ab8",
+              "windows": "1:474201715625:web:63974cae624b966db14ab8"
+            }
+          }
+        }
+      }
+    }
+  }
